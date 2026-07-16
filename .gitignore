@@ -1,0 +1,7 @@
+library/
+local/
+temp/
+build/
+*.meta
+.DS_Store
+node_modules/

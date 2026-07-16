@@ -1,0 +1,28 @@
+{
+  "version": "3.8.0",
+  "canvas": {
+    "width": 720,
+    "height": 1280
+  },
+  "nodeTree": [
+    {
+      "name": "Canvas",
+      "parent": null,
+      "children": ["BattleRoot"],
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1}
+    },
+    {
+      "name": "BattleRoot",
+      "parent": "Canvas",
+      "children": [],
+      "position": {"x": 0, "y": 0},
+      "components": [
+        {
+          "type": "cc.Script",
+          "script": "Bootstrap"
+        }
+      ]
+    }
+  ]
+}

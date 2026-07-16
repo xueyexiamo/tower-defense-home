@@ -1,0 +1,9 @@
+{
+  "name": "tower-defense-home",
+  "version": "0.1.0",
+  "private": true,
+  "description": "塔防家园 - 宇宙题材塔防游戏",
+  "dependencies": {
+    "cce-engine": "3.8.0"
+  }
+}
