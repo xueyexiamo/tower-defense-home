@@ -38,12 +38,14 @@ export const BattleConfig = {
     ENEMY_START_WAVE_DELAY: 3.0,
 
     // === 波次 ===
-    WAVE_CONFIGS: [
-        { enemyCount: 5, enemyHP: 50, enemySpeed: 60, spawnInterval: 1.5, reward: 5 },
-        { enemyCount: 8, enemyHP: 60, enemySpeed: 65, spawnInterval: 1.2, reward: 5 },
-        { enemyCount: 10, enemyHP: 80, enemySpeed: 70, spawnInterval: 1.0, reward: 6 },
-        { enemyCount: 7, enemyHP: 200, enemySpeed: 40, spawnInterval: 2.0, reward: 20, isBossWave: true },
-    ],
+   WAVE_CONFIGS: [
+       { enemyCount: 5, enemyHP: 50, enemySpeed: 60, spawnInterval: 1.5, reward: 5 },
+       { enemyCount: 8, enemyHP: 60, enemySpeed: 65, spawnInterval: 1.2, reward: 5 },
+        { enemyCount: 5, enemyHP: 30, enemySpeed: 100, spawnInterval: 0.8, reward: 4 },
+        { enemyCount: 7, enemyHP: 120, enemySpeed: 40, spawnInterval: 1.5, reward: 8 },
+       { enemyCount: 10, enemyHP: 80, enemySpeed: 70, spawnInterval: 1.0, reward: 6 },
+       { enemyCount: 7, enemyHP: 200, enemySpeed: 40, spawnInterval: 2.0, reward: 20, isBossWave: true },
+   ],
 
     // === 路径由一系列路点坐标组成，敌人沿路点前进 ===
     PATH_WAYPOINTS: [

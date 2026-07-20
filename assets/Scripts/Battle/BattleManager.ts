@@ -1,5 +1,7 @@
 import { _decorator, Component, Node, Vec3 } from 'cc';
 import { BattleConfig } from '../Data/BattleConfig';
+import { getUnitData } from '../Data/UnitData';
+import { createBehavior } from '../Entities/UnitBehavior';
 import { GridManager } from './GridManager';
 import { EnergyManager } from './EnergyManager';
 import { WaveManager } from './WaveManager';
@@ -82,12 +84,23 @@ export class BattleManager extends Component {
         if (idx >= 0) this._enemyNodes.splice(idx, 1);
     }
 
-    buildUnit(col: number, row: number, unitType: string = 'default'): boolean {
+    /** 获取敌人列表，供 Unit behavior 使用 */
+    getEnemyNodes(): { node: Node; isBoss: boolean }[] {
+        return this._enemyNodes;
+    }
+
+    buildUnit(col: number, row: number, unitType: string = 'shield_guard'): boolean {
         if (!this.gridManager || !this.energyManager) return false;
         if (this._state !== BattleState.PLAYING) return false;
 
+        const unitData = getUnitData(unitType);
+        if (!unitData) {
+            console.warn(`[BattleManager] Unknown unit type: ${unitType}`);
+            return false;
+        }
+
         if (this.gridManager.getCell(col, row)?.occupied) return false;
-        if (!this.energyManager.spend(BattleConfig.UNIT_COST)) return false;
+        if (!this.energyManager.spend(unitData.cost)) return false;
 
         const node = new Node('Unit');
         this.node.addChild(node);
@@ -97,15 +110,29 @@ export class BattleManager extends Component {
 
         const unit = node.addComponent(Unit);
         unit.init({
-            unitId: unitType,
-            unitName: unitType === 'default' ? '基础兵种' : unitType,
-            maxHp: BattleConfig.UNIT_MAX_HP,
-            attackRange: BattleConfig.UNIT_ATTACK_RANGE,
-            attackDamage: BattleConfig.UNIT_ATTACK_DAMAGE,
-            attackInterval: BattleConfig.UNIT_ATTACK_INTERVAL,
+            unitId: unitData.id,
+            unitName: unitData.name,
+            maxHp: unitData.stats.maxHp,
+            attackRange: unitData.stats.attackRange,
+            attackDamage: unitData.stats.attackDamage,
+            attackInterval: unitData.stats.attackInterval,
         }, col, row);
 
-        this.gridManager.placeUnit(col, row, unitType);
+        // 注入行为策略
+        const behavior = createBehavior(unitData, (amount: number) => {
+            if (this.energyManager) this.energyManager.add(amount);
+        });
+        unit.setBehavior(behavior);
+
+        // 矿工：每帧更新能量点产出
+        unit.behaviorUpdateExtra = (dt: number) => {
+            const miner = (unit.behavior as any);
+            if (miner && typeof miner.updateMine === 'function') {
+                miner.updateMine(dt);
+            }
+        };
+
+        this.gridManager.placeUnit(col, row, unitData.id);
 
         unit.findTarget = () => this.findNearestEnemy(node.getPosition(), unit.priorityBoss);
         unit.onAttackTarget = (targetNode, damage) => this.damageEnemy(targetNode, damage);

@@ -5,6 +5,7 @@ import { WaveManager } from './Battle/WaveManager';
 import { BaseManager } from './Battle/BaseManager';
 import { BattleManager } from './Battle/BattleManager';
 import { BattleUI } from './UI/BattleUI';
+import { BuildPanel } from './UI/BuildPanel';
 import { Unit } from './Entities/Unit';
 
 const { ccclass } = _decorator;
@@ -17,6 +18,7 @@ export class Bootstrap extends Component {
     private baseManager: BaseManager | null = null;
     private battleManager: BattleManager | null = null;
     private battleUI: BattleUI | null = null;
+    private buildPanel: BuildPanel | null = null;
 
     onLoad() {
         console.log('[Bootstrap] Initializing battle systems...');
@@ -65,6 +67,11 @@ export class Bootstrap extends Component {
             this.gridManager
         );
 
+        const buildPanelNode = new Node('BuildPanel');
+        this.node.addChild(buildPanelNode);
+        this.buildPanel = buildPanelNode.addComponent(BuildPanel);
+        this.buildPanel.setManagers(this.battleManager, this.energyManager, this.gridManager);
+
         input.on(Input.EventType.TOUCH_END, (event: EventTouch) => {
             this.onSceneTap(event.getUILocation());
         });
@@ -73,7 +80,7 @@ export class Bootstrap extends Component {
     }
 
     private onSceneTap(screenPos: Vec3 | { x: number; y: number }) {
-        if (!this.battleManager || !this.gridManager || !this.battleUI) return;
+        if (!this.battleManager || !this.gridManager || !this.battleUI || !this.buildPanel) return;
 
         const worldPos = new Vec3(screenPos.x, screenPos.y, 0);
         const cell = this.gridManager.getCellAtPos(worldPos);
@@ -86,7 +93,6 @@ export class Bootstrap extends Component {
                     this.battleUI.selectUnit(unit);
                 }
             } else {
-                this.battleManager.buildUnit(cell.col, cell.row, 'default');
                 this.battleUI.deselectUnit();
             }
         } else {

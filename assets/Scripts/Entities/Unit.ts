@@ -1,5 +1,6 @@
 import { _decorator, Component, Node, Vec3, Graphics, Color } from 'cc';
 import { BattleConfig } from '../Data/BattleConfig';
+import { IUnitBehavior } from './UnitBehavior';
 
 const { ccclass } = _decorator;
 
@@ -24,6 +25,8 @@ export class Unit extends Component {
     private _gridRow: number = -1;
     private gfx: Graphics | null = null;
     private hpBar: Graphics | null = null;
+    private _behavior: IUnitBehavior | null = null;
+    public behaviorUpdateExtra: ((dt: number) => void) | null = null;
 
     public findTarget: (() => { node: Node; isBoss: boolean } | null) | null = null;
     public onAttackTarget: ((targetNode: Node, damage: number) => void) | null = null;
@@ -36,6 +39,13 @@ export class Unit extends Component {
     get hp(): number { return this._hp; }
     get config(): UnitConfig | null { return this._config; }
     get priorityBoss(): boolean { return this._priorityBoss; }
+
+    setBehavior(behavior: IUnitBehavior) {
+        this._behavior = behavior;
+        behavior.onSpawn?.(this);
+    }
+
+    get behavior(): IUnitBehavior | null { return this._behavior; }
 
     init(config: UnitConfig, col: number, row: number) {
         this._config = config;
@@ -114,12 +124,30 @@ export class Unit extends Component {
     update(dt: number) {
         if (this._isDead || !this._config) return;
 
-        this._attackTimer += dt;
-        if (this._attackTimer >= this._config.attackInterval) {
-            this._attackTimer = 0;
-            const target = this.findTarget?.();
-            if (target) {
-                this.onAttackTarget?.(target.node, this._config.attackDamage);
+        // 矿工额外更新
+        this.behaviorUpdateExtra?.(dt);
+
+        if (this._behavior) {
+            this._attackTimer += dt;
+            if (this._attackTimer >= this._config.attackInterval) {
+                this._attackTimer = 0;
+                const allEnemies = this.findTarget ? [{ node: null as unknown as Node, isBoss: false }] : [];
+                // behavior 通过外部回调来获得敌人列表
+                const target = this.findTarget?.();
+                if (target) {
+                    this.onAttackTarget?.(target.node, this._config.attackDamage);
+                    this._behavior.onAttack?.(this, target.node, this._config.attackDamage);
+                }
+            }
+        } else {
+            // 无 behavior 时使用原始逻辑
+            this._attackTimer += dt;
+            if (this._attackTimer >= this._config.attackInterval) {
+                this._attackTimer = 0;
+                const target = this.findTarget?.();
+                if (target) {
+                    this.onAttackTarget?.(target.node, this._config.attackDamage);
+                }
             }
         }
     }
