@@ -5,5 +5,9 @@
   "description": "塔防家园 - 宇宙题材塔防游戏",
   "dependencies": {
     "cce-engine": "3.8.0"
-  }
+  },
+  "creator": {
+    "version": "3.8.8"
+  },
+  "uuid": "b6f97ebf-a818-48ad-9b39-6fc3f320096a"
 }

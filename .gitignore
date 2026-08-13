@@ -2,6 +2,9 @@ library/
 local/
 temp/
 build/
+profiles/
+settings/v2/packages/*
+!settings/v2/packages/project.json
 *.meta
 .DS_Store
 node_modules/
