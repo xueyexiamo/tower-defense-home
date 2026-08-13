@@ -37,7 +37,6 @@ export class BuildPanel extends Component {
             { cat: UnitCategory.MELEE, label: '近战' },
             { cat: UnitCategory.RANGED, label: '远程' },
             { cat: UnitCategory.SPECIAL, label: '特殊' },
-            { cat: UnitCategory.ULTIMATE, label: '终极' },
         ];
 
         // 分类选项卡

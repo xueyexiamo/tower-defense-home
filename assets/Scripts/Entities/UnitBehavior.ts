@@ -89,7 +89,6 @@ export function createBehavior(data: UnitDataDef, onMineEnergy: (amount: number)
         case 'healer': return new HealerBehavior();
         case 'slow_tower': return new SlowBehavior();
         case 'miner': return new MinerBehavior(onMineEnergy);
-        case 'dreadnought': return new MeleeBehavior();
         default: return new MeleeBehavior();
     }
 }

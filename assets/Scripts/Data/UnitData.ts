@@ -119,15 +119,6 @@ export const UNIT_TYPES: UnitDataDef[] = [
         visual: { fillColor: { r: 200, g: 180, b: 50 }, strokeColor: { r: 255, g: 220, b: 100 }, radius: 16 },
         tags: ['mine'],
     },
-    // ===== 终极 =====
-    {
-        id: 'dreadnought', name: '无畏战甲',
-        description: '终极单位，高伤害范围攻击', category: UnitCategory.ULTIMATE,
-        cost: 60, buildCd: 8.0,
-        stats: { maxHp: 400, attackDamage: 50, attackInterval: 1.0, attackRange: 120 },
-        visual: { fillColor: { r: 220, g: 180, b: 30 }, strokeColor: { r: 255, g: 220, b: 80 }, radius: 35 },
-        tags: ['highDps', 'tank', 'aoe'],
-    },
 ];
 
 export function getUnitData(id: string): UnitDataDef | undefined {
