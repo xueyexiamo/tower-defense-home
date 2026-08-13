@@ -29,7 +29,7 @@ export class BuildPanel extends Component {
         this.battleManager = battle;
         this.energyManager = energy;
         this.gridManager = grid;
-        this.energyManager.onEnergyChanged = () => this.updateButtonStates();
+        this.energyManager.addListener(() => this.updateButtonStates());
     }
 
     private createPanel() {
@@ -45,11 +45,12 @@ export class BuildPanel extends Component {
             const n = new Node(`Tab_${cat}`);
             this.node.addChild(n);
             n.setPosition(90 + i * 140, 120);
+            n.addComponent(Button);
             const lbl = n.addComponent(Label);
             lbl.string = label;
             lbl.fontSize = 20;
             lbl.color = cat === this.selectedCategory ? new Color(100, 200, 255) : new Color(180, 180, 180);
-            n.on('click', () => this.switchCategory(cat));
+            n.on(Button.EventType.CLICK, () => this.switchCategory(cat));
             this.categoryButtons.set(cat, n);
         });
 
@@ -74,13 +75,15 @@ export class BuildPanel extends Component {
             const n = new Node(`Build_${data.id}`);
             this.node.addChild(n);
             n.setPosition(60 + i * 90, 60);
+            n.addComponent(Button);
             const lbl = n.addComponent(Label);
             lbl.string = `${data.name}\n${data.cost}`;
             lbl.fontSize = 16;
             lbl.color = new Color(180, 220, 255);
             lbl.lineHeight = 20;
-            this.slots.push({ data, btnNode: n, cooldownTimer: 0 });
-            n.on('click', () => this.onBuild(this.slots[this.slots.length - 1]));
+            const slot: BuildSlot = { data, btnNode: n, cooldownTimer: 0 };
+            this.slots.push(slot);
+            n.on(Button.EventType.CLICK, () => this.onBuild(slot));
         });
         this.updateButtonStates();
     }

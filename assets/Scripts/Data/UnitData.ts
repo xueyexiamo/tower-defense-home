@@ -19,6 +19,12 @@ export interface UnitStats {
     attackDamage: number;
     attackInterval: number;
     attackRange: number;
+    /** 溅射半径（法师 AOE 专用） */
+    splashRadius?: number;
+    /** 单次治疗量（治疗兵专用） */
+    healAmount?: number;
+    /** 减速倍率，0~1（减速塔专用） */
+    slowFactor?: number;
 }
 
 /** 兵种数据定义 */
@@ -82,7 +88,7 @@ export const UNIT_TYPES: UnitDataDef[] = [
         id: 'mage', name: '法师',
         description: '范围魔法攻击', category: UnitCategory.RANGED,
         cost: 30, buildCd: 3.0,
-        stats: { maxHp: 40, attackDamage: 35, attackInterval: 2.5, attackRange: 160 },
+        stats: { maxHp: 40, attackDamage: 35, attackInterval: 2.5, attackRange: 160, splashRadius: 80 },
         visual: { fillColor: { r: 180, g: 60, b: 200 }, strokeColor: { r: 220, g: 120, b: 255 }, radius: 18 },
         tags: ['ranged', 'splash'],
     },
@@ -91,7 +97,8 @@ export const UNIT_TYPES: UnitDataDef[] = [
         id: 'healer', name: '治疗兵',
         description: '持续恢复附近友方单位', category: UnitCategory.SPECIAL,
         cost: 25, buildCd: 3.0,
-        stats: { maxHp: 80, attackDamage: 0, attackInterval: 99, attackRange: 0 },
+        // attackRange = 治疗范围，attackInterval = 治疗间隔，healAmount = 单次治疗量
+        stats: { maxHp: 80, attackDamage: 0, attackInterval: 1.5, attackRange: 150, healAmount: 12 },
         visual: { fillColor: { r: 60, g: 220, b: 180 }, strokeColor: { r: 120, g: 255, b: 220 }, radius: 20 },
         tags: ['heal'],
     },
@@ -99,7 +106,8 @@ export const UNIT_TYPES: UnitDataDef[] = [
         id: 'slow_tower', name: '减速塔',
         description: '降低附近敌人移动速度', category: UnitCategory.SPECIAL,
         cost: 20, buildCd: 2.0,
-        stats: { maxHp: 60, attackDamage: 0, attackInterval: 99, attackRange: 150 },
+        // attackRange = 减速范围，slowFactor = 减速倍率
+        stats: { maxHp: 60, attackDamage: 0, attackInterval: 99, attackRange: 150, slowFactor: 0.5 },
         visual: { fillColor: { r: 100, g: 200, b: 220 }, strokeColor: { r: 150, g: 240, b: 255 }, radius: 22 },
         tags: ['slow'],
     },

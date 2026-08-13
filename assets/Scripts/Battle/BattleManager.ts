@@ -116,6 +116,11 @@ export class BattleManager extends Component {
             attackRange: unitData.stats.attackRange,
             attackDamage: unitData.stats.attackDamage,
             attackInterval: unitData.stats.attackInterval,
+            cost: unitData.cost,
+            splashRadius: unitData.stats.splashRadius,
+            slowFactor: unitData.stats.slowFactor,
+            healAmount: unitData.stats.healAmount,
+            visual: unitData.visual,
         }, col, row);
 
         // 注入行为策略
@@ -124,18 +129,31 @@ export class BattleManager extends Component {
         });
         unit.setBehavior(behavior);
 
-        // 矿工：每帧更新能量点产出
-        unit.behaviorUpdateExtra = (dt: number) => {
-            const miner = (unit.behavior as any);
-            if (miner && typeof miner.updateMine === 'function') {
-                miner.updateMine(dt);
-            }
-        };
-
         this.gridManager.placeUnit(col, row, unitData.id);
 
-        unit.findTarget = () => this.findNearestEnemy(node.getPosition(), unit.priorityBoss);
+        // 只有具备攻击数值的单位才索敌（治疗/减速/矿工不参与攻击）
+        if (unitData.stats.attackDamage > 0) {
+            unit.findTarget = () => this.findNearestEnemy(node.getPosition(), unit.priorityBoss);
+        }
         unit.onAttackTarget = (targetNode, damage) => this.damageEnemy(targetNode, damage);
+        unit.onSplashAttack = (center, radius, damage) => this.damageEnemiesInRadius(center, radius, damage);
+        unit.onHealNearby = (range, amount) => {
+            for (const ally of this._units) {
+                if (ally === unit || ally.isDead || ally.hp >= ally.maxHp) continue;
+                if (Vec3.distance(unit.node.getPosition(), ally.node.getPosition()) <= range) {
+                    ally.repair(amount);
+                }
+            }
+        };
+        unit.onSlowEnemies = (range, factor, duration) => {
+            const unitPos = unit.node.getPosition();
+            for (const e of [...this._enemyNodes]) {
+                const enemy = e.node.getComponent(Enemy);
+                if (enemy && Vec3.distance(unitPos, e.node.getPosition()) <= range) {
+                    enemy.applySlow(factor, duration);
+                }
+            }
+        };
         unit.onDestroyed = (u) => {
             const idx = this._units.indexOf(u);
             if (idx >= 0) this._units.splice(idx, 1);
@@ -174,6 +192,16 @@ export class BattleManager extends Component {
         const enemy = targetNode.getComponent(Enemy);
         if (enemy) {
             enemy.takeDamage(damage);
+        }
+    }
+
+    /** 对范围内所有敌人造成伤害（法师溅射） */
+    private damageEnemiesInRadius(center: Vec3, radius: number, damage: number) {
+        for (const e of [...this._enemyNodes]) {
+            const enemy = e.node.getComponent(Enemy);
+            if (enemy && Vec3.distance(center, e.node.getPosition()) <= radius) {
+                enemy.takeDamage(damage);
+            }
         }
     }
 

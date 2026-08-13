@@ -7,8 +7,7 @@ const { ccclass } = _decorator;
 export class EnergyManager extends Component {
     private _current: number = 0;
     private _maxEnergy: number = 0;
-
-    public onEnergyChanged: ((current: number) => void) | null = null;
+    private _listeners: Array<(current: number) => void> = [];
 
     onLoad() {
         this._current = BattleConfig.INITIAL_ENERGY;
@@ -16,6 +15,10 @@ export class EnergyManager extends Component {
 
     get current(): number {
         return this._current;
+    }
+
+    addListener(callback: (current: number) => void) {
+        this._listeners.push(callback);
     }
 
     add(amount: number) {
@@ -41,8 +44,8 @@ export class EnergyManager extends Component {
     }
 
     private notifyChanged() {
-        if (this.onEnergyChanged) {
-            this.onEnergyChanged(this._current);
+        for (const cb of this._listeners) {
+            cb(this._current);
         }
     }
 }

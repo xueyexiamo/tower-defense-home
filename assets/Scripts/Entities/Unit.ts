@@ -1,5 +1,6 @@
 import { _decorator, Component, Node, Vec3, Graphics, Color } from 'cc';
 import { BattleConfig } from '../Data/BattleConfig';
+import { UnitVisualConfig } from '../Data/UnitData';
 import { IUnitBehavior } from './UnitBehavior';
 
 const { ccclass } = _decorator;
@@ -11,6 +12,11 @@ export interface UnitConfig {
     attackRange: number;
     attackDamage: number;
     attackInterval: number;
+    cost: number;
+    splashRadius?: number;
+    slowFactor?: number;
+    healAmount?: number;
+    visual: UnitVisualConfig;
 }
 
 @ccclass('Unit')
@@ -26,11 +32,16 @@ export class Unit extends Component {
     private gfx: Graphics | null = null;
     private hpBar: Graphics | null = null;
     private _behavior: IUnitBehavior | null = null;
-    public behaviorUpdateExtra: ((dt: number) => void) | null = null;
 
     public findTarget: (() => { node: Node; isBoss: boolean } | null) | null = null;
     public onAttackTarget: ((targetNode: Node, damage: number) => void) | null = null;
     public onDestroyed: ((unit: Unit) => void) | null = null;
+    /** 溅射攻击：对目标周围 radius 内敌人造成伤害（法师） */
+    public onSplashAttack: ((center: Vec3, radius: number, damage: number) => void) | null = null;
+    /** 治疗范围内受损友军（治疗兵） */
+    public onHealNearby: ((range: number, amount: number) => void) | null = null;
+    /** 对范围内敌人施加减速（减速塔） */
+    public onSlowEnemies: ((range: number, factor: number, duration: number) => void) | null = null;
 
     get isDead(): boolean { return this._isDead; }
     get gridCol(): number { return this._gridCol; }
@@ -62,10 +73,15 @@ export class Unit extends Component {
     private drawVisual() {
         const g = this.getComponent(Graphics) || this.addComponent(Graphics);
         this.gfx = g;
-        g.fillColor = new Color(50, 150, 255);
-        g.strokeColor = new Color(150, 200, 255);
+        const v = this._config?.visual;
+        g.fillColor = v
+            ? new Color(v.fillColor.r, v.fillColor.g, v.fillColor.b)
+            : new Color(50, 150, 255);
+        g.strokeColor = v
+            ? new Color(v.strokeColor.r, v.strokeColor.g, v.strokeColor.b)
+            : new Color(150, 200, 255);
         g.lineWidth = 2;
-        g.circle(0, 0, 25);
+        g.circle(0, 0, v?.radius ?? 25);
         g.fill();
         g.stroke();
 
@@ -124,37 +140,23 @@ export class Unit extends Component {
     update(dt: number) {
         if (this._isDead || !this._config) return;
 
-        // 矿工额外更新
-        this.behaviorUpdateExtra?.(dt);
+        // 行为策略的每帧更新（矿工产能量、治疗、减速等）
+        this._behavior?.onUpdate?.(this, dt);
 
-        if (this._behavior) {
-            this._attackTimer += dt;
-            if (this._attackTimer >= this._config.attackInterval) {
-                this._attackTimer = 0;
-                const allEnemies = this.findTarget ? [{ node: null as unknown as Node, isBoss: false }] : [];
-                // behavior 通过外部回调来获得敌人列表
-                const target = this.findTarget?.();
-                if (target) {
-                    this.onAttackTarget?.(target.node, this._config.attackDamage);
-                    this._behavior.onAttack?.(this, target.node, this._config.attackDamage);
-                }
-            }
-        } else {
-            // 无 behavior 时使用原始逻辑
-            this._attackTimer += dt;
-            if (this._attackTimer >= this._config.attackInterval) {
-                this._attackTimer = 0;
-                const target = this.findTarget?.();
-                if (target) {
-                    this.onAttackTarget?.(target.node, this._config.attackDamage);
-                }
-            }
-        }
+        this._attackTimer += dt;
+        if (this._attackTimer < this._config.attackInterval) return;
+        this._attackTimer = 0;
+
+        const target = this.findTarget?.();
+        if (!target) return;
+        this.onAttackTarget?.(target.node, this._config.attackDamage);
+        this._behavior?.onAttack?.(this, target.node, this._config.attackDamage);
     }
 
     destroySelf(): number {
         this._isDead = true;
-        const refund = Math.ceil(BattleConfig.UNIT_COST * BattleConfig.UNIT_DESTROY_REFUND_RATIO);
+        const cost = this._config?.cost ?? BattleConfig.UNIT_COST;
+        const refund = Math.ceil(cost * BattleConfig.UNIT_DESTROY_REFUND_RATIO);
         this.onDestroyed?.(this);
         this.gfx?.clear();
         this.node.destroy();

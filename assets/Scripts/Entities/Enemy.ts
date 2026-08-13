@@ -19,6 +19,8 @@ export class Enemy extends Component {
     private _waypointIndex: number = 0;
     private _isDead: boolean = false;
     private _isBoss: boolean = false;
+    private _slowFactor: number = 1;
+    private _slowTimer: number = 0;
     private gfx: Graphics | null = null;
 
     public onReachedEnd: ((enemy: Enemy) => void) | null = null;
@@ -29,6 +31,12 @@ export class Enemy extends Component {
     get isBoss(): boolean { return this._isBoss; }
     get hp(): number { return this._hp; }
     get maxHp(): number { return this._maxHp; }
+
+    /** 施加减速，取最小倍率并刷新持续时间（减速塔） */
+    applySlow(factor: number, duration: number) {
+        this._slowFactor = Math.min(this._slowFactor, factor);
+        this._slowTimer = Math.max(this._slowTimer, duration);
+    }
 
     init(config: EnemyConfig) {
         this._maxHp = config.hp;
@@ -82,7 +90,16 @@ export class Enemy extends Component {
             return;
         }
 
-        const moveDist = this._speed * dt;
+        const speed = this._slowTimer > 0 ? this._speed * this._slowFactor : this._speed;
+        if (this._slowTimer > 0) {
+            this._slowTimer -= dt;
+            if (this._slowTimer <= 0) {
+                this._slowTimer = 0;
+                this._slowFactor = 1;
+            }
+        }
+
+        const moveDist = speed * dt;
         const ratio = Math.min(moveDist / dist, 1);
         this.node.setPosition(
             pos.x + dx * ratio,

@@ -42,9 +42,9 @@ export class BattleUI extends Component {
         this.waveManager = wave;
         this.gridManager = grid;
 
-        this.energyManager.onEnergyChanged = (current) => {
+        this.energyManager.addListener((current) => {
             this.updateEnergyLabel(current);
-        };
+        });
 
         this.baseManager.onHpChanged = (current, max) => {
             this.updateHpLabel(current, max);
@@ -105,7 +105,6 @@ export class BattleUI extends Component {
         nwLabel.string = '下一波 >>';
         nwLabel.fontSize = 22;
         nwBtn.node.on('click', () => this.waveManager?.requestNextWave());
-        nwBtn.node.addComponent(Label);
 
         // 兵种操作菜单（初始隐藏）
         const menuNode = new Node('UnitMenu');
@@ -118,6 +117,7 @@ export class BattleUI extends Component {
         const repairNode = new Node('RepairBtn');
         menuNode.addChild(repairNode);
         repairNode.setPosition(-80, 0);
+        repairNode.addComponent(Button);
         const rLbl = repairNode.addComponent(Label);
         rLbl.string = '修复';
         rLbl.fontSize = 20;
@@ -127,6 +127,7 @@ export class BattleUI extends Component {
         const destroyNode = new Node('DestroyBtn');
         menuNode.addChild(destroyNode);
         destroyNode.setPosition(80, 0);
+        destroyNode.addComponent(Button);
         const dLbl = destroyNode.addComponent(Label);
         dLbl.string = '销毁';
         dLbl.fontSize = 20;
@@ -136,6 +137,7 @@ export class BattleUI extends Component {
         const priorityNode = new Node('PriorityBtn');
         menuNode.addChild(priorityNode);
         priorityNode.setPosition(0, -80);
+        priorityNode.addComponent(Button);
         const pLbl = priorityNode.addComponent(Label);
         pLbl.string = '优先 Boss: OFF';
         pLbl.fontSize = 18;

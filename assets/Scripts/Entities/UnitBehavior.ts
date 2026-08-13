@@ -1,10 +1,11 @@
-import { _decorator, Component, Node, Vec3 } from 'cc';
+import { Node } from 'cc';
 import { Unit } from './Unit';
-import { UnitCategory, UnitDataDef } from '../Data/UnitData';
-import { BattleConfig } from '../Data/BattleConfig';
+import { UnitDataDef } from '../Data/UnitData';
 
 export interface IUnitBehavior {
-    updateTarget(unit: Unit, enemies: { node: Node; isBoss: boolean }[], dt: number): { node: Node; isBoss: boolean } | null;
+    /** 每帧更新（矿工产能量、治疗、减速等） */
+    onUpdate?(unit: Unit, dt: number): void;
+    /** 攻击命中后的回调（溅射等） */
     onAttack?(unit: Unit, target: Node, damage: number): void;
     onSpawn?(unit: Unit): void;
     onDestroy?(unit: Unit): void;
@@ -12,60 +13,51 @@ export interface IUnitBehavior {
 
 /** 近战行为 */
 export class MeleeBehavior implements IUnitBehavior {
-    updateTarget(unit: Unit, enemies: { node: Node; isBoss: boolean }[], dt: number): { node: Node; isBoss: boolean } | null {
-        if (enemies.length === 0) return null;
-        const pos = unit.node.getPosition();
-        const range = unit.config?.attackRange ?? BattleConfig.UNIT_ATTACK_RANGE;
-        let nearest: { node: Node; isBoss: boolean } | null = null;
-        let minDist = range;
-        for (const e of enemies) {
-            const dist = Vec3.distance(pos, e.node.getPosition());
-            if (dist <= minDist) { minDist = dist; nearest = e; }
-        }
-        return nearest;
-    }
+    // 目标选择由 BattleManager 统一处理，保留扩展位
 }
 
 /** 远程行为 */
 export class RangedBehavior implements IUnitBehavior {
-    updateTarget(unit: Unit, enemies: { node: Node; isBoss: boolean }[], dt: number): { node: Node; isBoss: boolean } | null {
-        if (enemies.length === 0) return null;
-        const pos = unit.node.getPosition();
-        const range = unit.config?.attackRange ?? BattleConfig.UNIT_ATTACK_RANGE;
-        if (unit.priorityBoss) {
-            const boss = enemies.find(e => e.isBoss);
-            if (boss && Vec3.distance(pos, boss.node.getPosition()) <= range) return boss;
-        }
-        let nearest: { node: Node; isBoss: boolean } | null = null;
-        let minDist = range;
-        for (const e of enemies) {
-            const dist = Vec3.distance(pos, e.node.getPosition());
-            if (dist <= minDist) { minDist = dist; nearest = e; }
-        }
-        return nearest;
-    }
+    // 目标选择由 BattleManager 统一处理，保留扩展位
 }
 
 /** 群体伤害行为 */
 export class SplashBehavior extends RangedBehavior {
-    onAttack(unit: Unit, target: Node, damage: number) {}
+    onAttack(unit: Unit, target: Node, damage: number) {
+        const radius = unit.config?.splashRadius ?? 80;
+        unit.onSplashAttack?.(target.getPosition(), radius, damage);
+    }
 }
 
 /** 治疗行为 */
 export class HealerBehavior implements IUnitBehavior {
-    updateTarget(_unit: Unit, _enemies: { node: Node; isBoss: boolean }[], _dt: number): { node: Node; isBoss: boolean } | null {
-        return null;
+    private healTimer: number = 0;
+
+    onUpdate(unit: Unit, dt: number) {
+        const interval = unit.config?.attackInterval ?? 1.5;
+        this.healTimer += dt;
+        if (this.healTimer < interval) return;
+        this.healTimer = 0;
+
+        const range = unit.config?.attackRange ?? 150;
+        const amount = unit.config?.healAmount ?? 10;
+        unit.onHealNearby?.(range, amount);
     }
-    onSpawn(_unit: Unit) {}
-    onAttack(_unit: Unit, _target: Node, _damage: number) {}
 }
 
 /** 减速行为 */
 export class SlowBehavior implements IUnitBehavior {
-    updateTarget(_unit: Unit, _enemies: { node: Node; isBoss: boolean }[], _dt: number): { node: Node; isBoss: boolean } | null {
-        return null;
+    private slowTimer: number = 0;
+
+    onUpdate(unit: Unit, dt: number) {
+        this.slowTimer += dt;
+        if (this.slowTimer < 0.5) return;
+        this.slowTimer = 0;
+
+        const range = unit.config?.attackRange ?? 150;
+        const factor = unit.config?.slowFactor ?? 0.5;
+        unit.onSlowEnemies?.(range, factor, 1.0);
     }
-    onAttack(_unit: Unit, _target: Node, _damage: number) {}
 }
 
 /** 矿工行为 */
@@ -78,20 +70,15 @@ export class MinerBehavior implements IUnitBehavior {
         this.onMineEnergy = onMine;
     }
 
-    updateTarget(_unit: Unit, _enemies: { node: Node; isBoss: boolean }[], _dt: number): { node: Node; isBoss: boolean } | null {
-        return null;
-    }
-
-    onSpawn(_unit: Unit) { this.mineTimer = 0; }
-    onAttack(_unit: Unit, _target: Node, _damage: number) {}
-
-    updateMine(dt: number) {
+    onUpdate(_unit: Unit, dt: number) {
         this.mineTimer += dt;
         if (this.mineTimer >= this.mineInterval) {
             this.mineTimer = 0;
             this.onMineEnergy?.(10);
         }
     }
+
+    onSpawn(_unit: Unit) { this.mineTimer = 0; }
 }
 
 export function createBehavior(data: UnitDataDef, onMineEnergy: (amount: number) => void): IUnitBehavior {
